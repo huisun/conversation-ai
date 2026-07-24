@@ -167,11 +167,7 @@ if __name__ == "__main__":
         tac=tac, voice_channel=voice_channel, messaging_channels=[sms_channel, whatsapp_channel]
     )
      # Session used by /agent — TAC resolves profile & memory from this address
-    agent_session = ConversationSession(
-        conversation_id="agent_session",
-        channel="agent",
-        author_info=AuthorInfo(address="whatsapp:+6592318885", participant_id="agent_test"),
-    )
+    
 
     @server.app.post("/agent")
     async def agent_endpoint(request: Request) -> JSONResponse:    
@@ -184,6 +180,15 @@ if __name__ == "__main__":
         print(f"agent BODY | {json.dumps(data)}")
 
         message = data.get("message", "")
+        address = data.get("from", "")
+        channel = data.get("channel", "agent").lower()
+
+        agent_session = ConversationSession(
+            conversation_id="agent_session",
+            channel=channel,
+            author_info=AuthorInfo(address=address, participant_id=""),
+        )
+
         if not message.strip():
             return JSONResponse({"error": "message is required"}, status_code=400)
 
