@@ -180,7 +180,7 @@ if __name__ == "__main__":
         print(f"agent BODY | {json.dumps(data)}")
 
         message = data.get("message", "")
-        address = data.get("from", "")
+        address = data.get("From", "")
         channel = data.get("channel", "agent").lower()
 
         agent_session = ConversationSession(
