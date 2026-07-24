@@ -162,12 +162,13 @@ class TAC:
                     "profile_id not found, attempting to lookup profile using address"
                 )
 
+                print(f"Channel | {conversation_context.channel}")
                 if conversation_context.author_info and conversation_context.author_info.address:
                     address = conversation_context.author_info.address
                     id_type = "email" if "@" in address else "phone"
                     lookup_response: ProfileLookupResponse = (
                         await self.conversation_memory_client.lookup_profile(
-                            id_type=id_type,
+                            id_type=conversation_context.channel,
                             value=address,
                         )
                     )
