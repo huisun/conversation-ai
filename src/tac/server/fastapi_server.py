@@ -10,6 +10,7 @@ Requires: pip install tac[server]
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import TYPE_CHECKING, Any
 
 from tac.channels.base import BaseChannel
@@ -18,6 +19,7 @@ from tac.core.logging import get_logger
 from tac.core.tac import TAC
 from tac.models.voice import TwiMLRequest
 from tac.server.config import TACServerConfig
+
 
 if TYPE_CHECKING:
     from tac.channels.messaging import MessagingChannel
@@ -173,6 +175,7 @@ class TACFastAPIServer:
                 """Handle incoming conversation webhooks from Twilio (all channels)."""
                 try:
                     webhook_data = await request.json()
+                    print(f"webhook BODY | {json.dumps(webhook_data)}")
                     if not isinstance(webhook_data, dict):
                         logger.error(
                             "Conversation webhook payload must be a JSON object",

@@ -23,11 +23,13 @@ from tac.adapters.openai import with_tac_memory
 from tac.channels.sms import SMSChannel, SMSChannelConfig
 from tac.channels.voice import VoiceChannel, VoiceChannelConfig
 from tac.core.logging import get_logger
-from tac.models.session import ConversationSession
+from tac.models.session import ConversationSession, AuthorInfo
 from tac.models.tac import TACMemoryResponse
 from tac.server import TACFastAPIServer
 from tac.channels.whatsapp import WhatsAppChannel, WhatsAppChannelConfig
 from tac.tools import create_knowledge_tool
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
@@ -85,13 +87,15 @@ async def handle_message_ready(
     Returns:
         Response string to send to the channel
     """
-    print(f" CALLBACK FIRED | channel={context.channel} | msg={user_message}")
+    print(f" CALLBACK FIRED | channel={context.channel} | msg={user_message} | context={context}")
     conv_id = context.conversation_id
 
     try:
         # Initialize conversation history for new conversations
         if conv_id not in conversation_history:
             conversation_history[conv_id] = [SYSTEM_MESSAGE]
+
+        print(f"PROFILE: {context.profile.traits if context.profile else None}")
 
         # Add user message to conversation history
         user_msg: ChatCompletionUserMessageParam = {"role": "user", "content": user_message}
@@ -162,4 +166,36 @@ if __name__ == "__main__":
     server = TACFastAPIServer(
         tac=tac, voice_channel=voice_channel, messaging_channels=[sms_channel, whatsapp_channel]
     )
+     # Session used by /agent — TAC resolves profile & memory from this address
+    agent_session = ConversationSession(
+        conversation_id="agent_session",
+        channel="agent",
+        author_info=AuthorInfo(address="whatsapp:+6592318885", participant_id="agent_test"),
+    )
+
+    @server.app.post("/agent")
+    async def agent_endpoint(request: Request) -> JSONResponse:    
+        # 1. Read the message from the request body
+        try:
+            data = json.loads(await request.body() or b"{}")
+        except json.JSONDecodeError:
+            return JSONResponse({"error": "invalid JSON"}, status_code=400)
+
+        print(f"agent BODY | {json.dumps(data)}")
+
+        message = data.get("message", "")
+        if not message.strip():
+            return JSONResponse({"error": "message is required"}, status_code=400)
+
+        # 2. Retrieve memory + profile (same as the WhatsApp flow does)
+        try:
+            memory_response = await tac.retrieve_memory(agent_session, query=message)
+        except Exception as e:
+            logger.warning(f"/agent memory retrieval failed: {e}")
+            memory_response = TACMemoryResponse([])
+
+        # 3. Run handle_message_ready — same call the channels make
+        reply = await handle_message_ready(message, agent_session, memory_response)
+
+        return JSONResponse({"reply": reply})
     server.start()
