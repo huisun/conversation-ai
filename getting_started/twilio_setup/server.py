@@ -832,6 +832,9 @@ async def lookup_profile(request: Request) -> dict:
     api_key = data.get("api_key")
     api_secret = data.get("api_secret")
     phone = data.get("phone")
+    idType = data.get("idType")
+
+    print(f"lookup-profile | {json.dumps(data)}")
 
     if not all([memory_store_id, profile_id, api_key, api_secret, phone]):
         return {"status": "error", "message": "Missing required fields"}
@@ -873,7 +876,7 @@ async def lookup_profile(request: Request) -> dict:
                 }
             else:
                 endpoint = f"https://memory.twilio.com/v1/Stores/{memory_store_id}/Profiles/Lookup"
-                payload = {"idType": "phone", "value": phone}
+                payload = {"idType": idType, "value": phone}
                 logger.error("Failed to lookup Profile")
                 logger.error(f"  Endpoint: {endpoint}")
                 logger.error(f"  Payload: {json.dumps(payload, indent=2)}")
