@@ -168,7 +168,7 @@ class TAC:
                     id_type = "email" if "@" in address else "phone"
                     lookup_response: ProfileLookupResponse = (
                         await self.conversation_memory_client.lookup_profile(
-                            id_type=conversation_context.channel,
+                            id_type=id_type,
                             value=address,
                         )
                     )
