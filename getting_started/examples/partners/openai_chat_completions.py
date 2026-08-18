@@ -152,6 +152,8 @@ async def handle_message_ready(
 
         llm_response = msg.content or ""
 
+        logger.info("LLM response",conversation_id=conv_id,channel=context.channel,user_message=user_message,llm_response=llm_response)
+
         # Save assistant response to conversation history
         assistant_msg: ChatCompletionAssistantMessageParam = {
             "role": "assistant",
